@@ -8,7 +8,7 @@ const app = express();
 const port = process.env.PORT;
 
 app.use(async (req, res, next) => {
-  const userIP = req.ip;
+  const userIP = req.socket.localAddress;
   try {
     let user = await UserIPCollection.findOne({ ip: userIP });
 
@@ -31,7 +31,7 @@ app.use(async (req, res, next) => {
 
 // Define a route to display user information
 app.get("/", async (req, res) => {
-  const userIP = req.ip;
+  const userIP = req.socket.localAddress;
   const user = await UserIPCollection.findOne({ ip: userIP });
 
   res.json({
