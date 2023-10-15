@@ -43,7 +43,11 @@ app.use(async (req, res, next) => {
 
 // Route to display user information
 app.get("/", async (req, res) => {
-  const userIP = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+  const forwardedFor = req.headers["x-forwarded-for"];
+  const userIP = forwardedFor
+    ? forwardedFor.split(",")[0]
+    : req.connection.remoteAddress;
+
   const user = await UserIPCollection.findOne({ ip: userIP });
 
   res.json({
