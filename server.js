@@ -8,8 +8,7 @@ const app = express();
 const port = process.env.PORT;
 
 app.use(async (req, res, next) => {
-  const userIP = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
-
+  const userIP = req.ip;
   try {
     let user = await UserIPCollection.findOne({ ip: userIP });
 
@@ -32,7 +31,7 @@ app.use(async (req, res, next) => {
 
 // Define a route to display user information
 app.get("/", async (req, res) => {
-  const userIP = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+  const userIP = req.ip;
   const user = await UserIPCollection.findOne({ ip: userIP });
 
   res.json({
