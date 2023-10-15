@@ -19,7 +19,9 @@ const UserIPCollection = mongoose.model("UserIPCollection", userSchema);
 
 // Middleware to track and store client IP address
 app.use(async (req, res, next) => {
-  const userIP = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+  const forwardedFor = req.headers["x-forwarded-for"];
+  const ips = forwardedFor ? forwardedFor.split(",") : [];
+  const userIP = ips[0] || req.socket.remoteAddress;
 
   try {
     let user = await UserIPCollection.findOne({ ip: userIP });
