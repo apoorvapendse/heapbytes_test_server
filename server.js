@@ -1,23 +1,33 @@
+// app.js
+
 import express from "express";
+import mongoose from "mongoose";
 import dotenv from "dotenv";
-import { connectDB } from "./database/databaseConnect.js";
-import UserIPCollection from "./models/ipmodel.js";
+
 dotenv.config();
+
 const app = express();
+const port = process.env.PORT || 3000;
+const mongoURI = process.env.MONGO_URI;
 
-const port = process.env.PORT;
+// Define a MongoDB schema and model
+const userSchema = new mongoose.Schema({
+  ip: String,
+  visitCount: Number,
+});
+const UserIPCollection = mongoose.model("UserIPCollection", userSchema);
 
+// Middleware to track and store client IP address
 app.use(async (req, res, next) => {
-  const userIP = req.socket.localAddress;
+  const userIP = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+
   try {
     let user = await UserIPCollection.findOne({ ip: userIP });
 
     if (user) {
-      // If the user is found, update the visit count
       user.visitCount++;
       await user.save();
     } else {
-      // If the user is not found, create a new entry
       user = new UserIPCollection({ ip: userIP, visitCount: 1 });
       await user.save();
     }
@@ -29,9 +39,9 @@ app.use(async (req, res, next) => {
   }
 });
 
-// Define a route to display user information
+// Route to display user information
 app.get("/", async (req, res) => {
-  const userIP = req.socket.localAddress;
+  const userIP = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
   const user = await UserIPCollection.findOne({ ip: userIP });
 
   res.json({
@@ -41,8 +51,19 @@ app.get("/", async (req, res) => {
   });
 });
 
-connectDB().then(() => {
+// Connect to the MongoDB database
+mongoose.connect(mongoURI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
+
+mongoose.connection.on("connected", () => {
+  console.log("Connected to MongoDB");
   app.listen(port, () => {
-    console.log(`server is listening on port ${port}`);
+    console.log(`Server is listening on port ${port}`);
   });
+});
+
+mongoose.connection.on("error", (err) => {
+  console.error("MongoDB connection error:", err);
 });
