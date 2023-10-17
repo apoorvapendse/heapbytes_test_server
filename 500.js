@@ -12,7 +12,7 @@ let interval = setInterval(async () => {
   } catch (err) {
     console.log(err);
   }
-  if (count == 10) {
+  if (count ==500) {
     clearInterval(interval);
   }
   count++;
