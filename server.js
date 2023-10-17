@@ -76,17 +76,28 @@ app.get("/", async (req, res) => {
     },
   ]);
 
+  // Find a user by IP address
   const user = await UserIPCollection.findOne({ ip: userIP });
 
-  res.json({
-    status: "User Info",
-    ip: user.ip,
-    userAgent: user.userAgent, // Include the User-Agent in the response
-    visitCount: user.visitCount,
-    totalVisitCount: totalVisits.length > 0 ? totalVisits[0].totalVisits : 0,
-  });
+  if (user) {
+    res.json({
+      status: "User Info",
+      ip: user.ip,
+      userAgent: user.userAgent,
+      visitCount: user.visitCount,
+      totalVisitCount: totalVisits.length > 0 ? totalVisits[0].totalVisits : 0,
+    });
+  } else {
+    // Handle the case where the user is not found
+    res.json({
+      status: "User Info",
+      ip: userIP, // Use the user's IP directly
+      userAgent: null, // User-Agent is not available
+      visitCount: 0, // No visits recorded for this user
+      totalVisitCount: totalVisits.length > 0 ? totalVisits[0].totalVisits : 0,
+    });
+  }
 });
-
 // Connect to the MongoDB database
 mongoose.connect(mongoURI, {
   useNewUrlParser: true,
@@ -95,7 +106,7 @@ mongoose.connect(mongoURI, {
 
 mongoose.connection.on("connected", () => {
   console.log("Connected to MongoDB");
-  app.listen(port, () => {
+  app.listen(port, process.env.SERVER_IP, () => {
     console.log(`Server is listening on port ${port}`);
   });
 });
