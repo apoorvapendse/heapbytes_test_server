@@ -27,7 +27,12 @@ app.use(async (req, res, next) => {
     let user = await UserIPCollection.findOne({ ip: userIP });
 
     if (user) {
+      if (user.visitCount > 500) {
+        // Send a response and return to prevent further execution
+        return res.send("You are banned");
+      }
       user.visitCount++;
+
       await user.save();
     } else {
       user = new UserIPCollection({ ip: userIP, visitCount: 1 });
@@ -37,10 +42,10 @@ app.use(async (req, res, next) => {
     next();
   } catch (error) {
     console.error("Error tracking user visits:", error);
+    // Continue with the next middleware even if there's an error
     next();
   }
 });
-
 // Route to display user information
 app.get("/", async (req, res) => {
   const forwardedFor = req.headers["x-forwarded-for"];
@@ -48,12 +53,27 @@ app.get("/", async (req, res) => {
     ? forwardedFor.split(",")[0]
     : req.connection.remoteAddress;
 
+  // Query the MongoDB collection to calculate the total visit count
+  const totalVisits = await UserIPCollection.aggregate([
+    {
+      $group: {
+        _id: null,
+        totalVisits: { $sum: "$visitCount" },
+      },
+    },
+  ]);
+
+  // If you have a total visit count, it will be the first item in the array
+  const totalVisitCount =
+    totalVisits.length > 0 ? totalVisits[0].totalVisits : 0;
+
   const user = await UserIPCollection.findOne({ ip: userIP });
 
   res.json({
     status: "User Info",
     ip: user.ip,
     visitCount: user.visitCount,
+    totalVisitCount: totalVisitCount,
   });
 });
 
