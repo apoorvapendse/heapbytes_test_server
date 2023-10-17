@@ -1,6 +1,6 @@
 //3600 seconds
-
-let timeForOneRequest = (3600 * 1000) / 500;
+const REQUESTSPERHOUR = 500;
+let timeForOneRequest = (3600 * 1000) / REQUESTSPERHOUR;
 let count = 0;
 console.log(`time interval for every req:${timeForOneRequest}ms`);
 let interval = setInterval(async () => {
@@ -12,7 +12,7 @@ let interval = setInterval(async () => {
   } catch (err) {
     console.log(err);
   }
-  if (count == 500) {
+  if (count == REQUESTSPERHOUR) {
     clearInterval(interval);
   }
   count++;
