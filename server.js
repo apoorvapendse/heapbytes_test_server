@@ -1,5 +1,3 @@
-// app.js
-
 import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
@@ -10,21 +8,27 @@ const app = express();
 const port = process.env.PORT || 3000;
 const mongoURI = process.env.MONGO_URI;
 
-// Define a MongoDB schema and model
 const userSchema = new mongoose.Schema({
   ip: String,
   visitCount: Number,
+  userAgent: String,
 });
 const UserIPCollection = mongoose.model("UserIPCollection", userSchema);
 
-// Middleware to track and store client IP address
 app.use(async (req, res, next) => {
   const forwardedFor = req.headers["x-forwarded-for"];
   const ips = forwardedFor ? forwardedFor.split(",") : [];
   const userIP = ips[0] || req.socket.remoteAddress;
+  const userAgent = req.headers["user-agent"]; // Capture the User-Agent
 
   try {
-    let user = await UserIPCollection.findOne({ ip: userIP });
+    let user;
+
+    if (userAgent) {
+      user = await UserIPCollection.findOne({ userAgent });
+    } else {
+      user = await UserIPCollection.findOne({ ip: userIP });
+    }
 
     if (user) {
       if (user.visitCount > 500) {
@@ -33,19 +37,23 @@ app.use(async (req, res, next) => {
       }
       user.visitCount++;
 
+      if (userAgent) {
+        user.userAgent = userAgent;
+      }
+
       await user.save();
     } else {
-      user = new UserIPCollection({ ip: userIP, visitCount: 1 });
+      user = new UserIPCollection({ ip: userIP, userAgent, visitCount: 1 });
       await user.save();
     }
 
     next();
   } catch (error) {
     console.error("Error tracking user visits:", error);
-    // Continue with the next middleware even if there's an error
     next();
   }
 });
+
 // Route to display user information
 app.get("/", async (req, res) => {
   const forwardedFor = req.headers["x-forwarded-for"];
@@ -53,7 +61,6 @@ app.get("/", async (req, res) => {
     ? forwardedFor.split(",")[0]
     : req.connection.remoteAddress;
 
-  // Query the MongoDB collection to calculate the total visit count
   const totalVisits = await UserIPCollection.aggregate([
     {
       $group: {
@@ -63,17 +70,14 @@ app.get("/", async (req, res) => {
     },
   ]);
 
-  // If you have a total visit count, it will be the first item in the array
-  const totalVisitCount =
-    totalVisits.length > 0 ? totalVisits[0].totalVisits : 0;
-
   const user = await UserIPCollection.findOne({ ip: userIP });
 
   res.json({
     status: "User Info",
     ip: user.ip,
+    userAgent: user.userAgent,
     visitCount: user.visitCount,
-    totalVisitCount: totalVisitCount,
+    totalVisitCount: totalVisits.length > 0 ? totalVisits[0].totalVisits : 0,
   });
 });
 
