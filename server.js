@@ -8,6 +8,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 const mongoURI = process.env.MONGO_URI;
 
+// Define a MongoDB schema and model
 const userSchema = new mongoose.Schema({
   ip: String,
   visitCount: Number,
@@ -15,6 +16,7 @@ const userSchema = new mongoose.Schema({
 });
 const UserIPCollection = mongoose.model("UserIPCollection", userSchema);
 
+// Middleware to track and store client IP address and User-Agent
 app.use(async (req, res, next) => {
   const forwardedFor = req.headers["x-forwarded-for"];
   const ips = forwardedFor ? forwardedFor.split(",") : [];
@@ -25,8 +27,10 @@ app.use(async (req, res, next) => {
     let user;
 
     if (userAgent) {
+      // Find a user by User-Agent
       user = await UserIPCollection.findOne({ userAgent });
     } else {
+      // If no User-Agent is provided, use the user's IP address
       user = await UserIPCollection.findOne({ ip: userIP });
     }
 
@@ -37,6 +41,7 @@ app.use(async (req, res, next) => {
       }
       user.visitCount++;
 
+      // Update the User-Agent, if available
       if (userAgent) {
         user.userAgent = userAgent;
       }
@@ -50,6 +55,7 @@ app.use(async (req, res, next) => {
     next();
   } catch (error) {
     console.error("Error tracking user visits:", error);
+    // Continue with the next middleware even if there's an error
     next();
   }
 });
@@ -75,7 +81,7 @@ app.get("/", async (req, res) => {
   res.json({
     status: "User Info",
     ip: user.ip,
-    userAgent: user.userAgent,
+    userAgent: user.userAgent, // Include the User-Agent in the response
     visitCount: user.visitCount,
     totalVisitCount: totalVisits.length > 0 ? totalVisits[0].totalVisits : 0,
   });
