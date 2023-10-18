@@ -106,7 +106,7 @@ mongoose.connect(mongoURI, {
 
 mongoose.connection.on("connected", () => {
   console.log("Connected to MongoDB");
-  app.listen(port, process.env.SERVER_IP, () => {
+  app.listen(port, () => {
     console.log(`Server is listening on port ${port}`);
   });
 });

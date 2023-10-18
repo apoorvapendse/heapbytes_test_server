@@ -1,5 +1,5 @@
 //3600 seconds
-const REQUESTSPERHOUR = 500;
+const REQUESTSPERHOUR = 5000;
 let timeForOneRequest = (3600 * 1000) / REQUESTSPERHOUR;
 let count = 0;
 console.log(`time interval for every req:${timeForOneRequest}ms`);
